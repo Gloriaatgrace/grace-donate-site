@@ -3,34 +3,39 @@ export default {
     const url = new URL(request.url);
     
     if (url.pathname === "/.well-known/apple-developer-merchantid-domain-association") {
-      const GITHUB_URL = "https://raw.githubusercontent.com/Gloriaatgrace/grace-donate-site/refs/heads/main/.well-known/apple-developer-merchantid-domain-association";
+      const GITHUB_URL = "https://raw.githubusercontent.com/Gloriaatgrace/grace-donate-site/main/.well-known/apple-developer-merchantid-domain-association";
       
-      // Use Cloudflare's cache API
-      const cache = caches.default;
-      const cacheKey = new Request(GITHUB_URL, request);
-      let response = await cache.match(cacheKey);
-      
-      if (!response) {
-        // Fetch from GitHub if not cached
-        response = await fetch(GITHUB_URL);
+      try {
+        // Fetch from GitHub
+        const githubResponse = await fetch(GITHUB_URL);
         
-        // Create new response with proper headers
-        response = new Response(response.body, {
+        if (!githubResponse.ok) {
+          return new Response("Failed to fetch verification file", { 
+            status: 502 
+          });
+        }
+        
+        // Get the text content
+        const content = await githubResponse.text();
+        
+        // Return with correct headers
+        return new Response(content, {
           status: 200,
           headers: {
-            "Content-Type": "text/plain",
+            "Content-Type": "text/plain",  // Force text/plain
             "Cache-Control": "public, max-age=86400",
             "X-Robots-Tag": "noindex"
           }
         });
         
-        // Store in cache
-        ctx.waitUntil(cache.put(cacheKey, response.clone()));
+      } catch (error) {
+        return new Response("Error fetching verification file", { 
+          status: 502 
+        });
       }
-      
-      return response;
     }
     
+    // Pass all other requests to origin
     return fetch(request);
   }
 };
