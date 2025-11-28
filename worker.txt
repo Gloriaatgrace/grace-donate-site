@@ -18,24 +18,25 @@ export default {
         // Get the text content
         const content = await githubResponse.text();
         
-        // Return with correct headers
+        // Return with correct headers - CRITICAL FOR APPLE
         return new Response(content, {
           status: 200,
           headers: {
-            "Content-Type": "text/plain",  // Force text/plain
+            "Content-Type": "text/plain; charset=utf-8",  // Added charset
             "Cache-Control": "public, max-age=86400",
             "X-Robots-Tag": "noindex"
           }
         });
         
       } catch (error) {
+        console.error('Error fetching Apple verification:', error);
         return new Response("Error fetching verification file", { 
           status: 502 
         });
       }
     }
     
-    // Pass all other requests to origin
+    // Pass all other requests to origin (Squarespace)
     return fetch(request);
   }
 };
