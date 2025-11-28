@@ -1,0 +1,36 @@
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    
+    if (url.pathname === "/.well-known/apple-developer-merchantid-domain-association") {
+      const GITHUB_URL = "https://raw.githubusercontent.com/Gloriaatgrace/grace-donate-site/refs/heads/main/.well-known/apple-developer-merchantid-domain-association";
+      
+      // Use Cloudflare's cache API
+      const cache = caches.default;
+      const cacheKey = new Request(GITHUB_URL, request);
+      let response = await cache.match(cacheKey);
+      
+      if (!response) {
+        // Fetch from GitHub if not cached
+        response = await fetch(GITHUB_URL);
+        
+        // Create new response with proper headers
+        response = new Response(response.body, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/plain",
+            "Cache-Control": "public, max-age=86400",
+            "X-Robots-Tag": "noindex"
+          }
+        });
+        
+        // Store in cache
+        ctx.waitUntil(cache.put(cacheKey, response.clone()));
+      }
+      
+      return response;
+    }
+    
+    return fetch(request);
+  }
+};
